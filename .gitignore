@@ -1,0 +1,33 @@
+# Build artifacts
+app
+app.exe
+test_avl
+test_avl.exe
+test_rb
+test_rb.exe
+test_btree
+test_btree.exe
+*.o
+*.obj
+*.exe
+
+# Large datasets
+data/*.csv
+data/processed/
+data/index_*.txt
+data/test/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Benchmark outputs
+benchmarks/results/*.csv
+benchmarks/results/*.json
+benchmarks/results/*.jsonl
+
+# IDE
+.idea/
+.vscode/
+cmake-build-*/
