@@ -21,3 +21,5 @@ typedef struct {
 Vector* createPostingList(void);
 void    appendPosting(Vector* list, int doc_id, const char* title);
 Vector* clonePostingList(const Vector* list);
+PostingEntry* getPostingEntry(const Vector* list, size_t index);
+size_t getPostingListSize(const Vector* list);

@@ -25,3 +25,6 @@ void    avlTraverse(
     void (*visit)(const char* key, Vector* postings, void* ctx),
     void* ctx
 );
+
+int avlGetHeight(const AVLNode* node);
+int avlIsBalanced(const AVLNode* node);
