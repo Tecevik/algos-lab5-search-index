@@ -1,60 +1,49 @@
 #include "posting.h"
-
+#include <stdlib.h>
 #include <string.h>
 
 Vector* createPostingList(void) {
-    return createVector(sizeof(PostingEntry));
+    return vectorCreate(sizeof(PostingEntry));
 }
 
 void appendPosting(Vector* list, int doc_id, const char* title) {
-    if (!list) return;
+    if (!list || !title) return;
 
-    /*
-     * Защита от повторного добавления того же документа.
-     *
-     * Если одно и то же слово встречается в документе несколько раз,
-     * posting list не должен хранить один и тот же doc_id несколько раз.
-     *
-     * Во время индексации документы обычно обрабатываются последовательно,
-     * поэтому достаточно проверить последнюю запись.
-     */
     if (list->size > 0) {
-        PostingEntry* last = getVectorItem(list, list->size - 1);
-
+        PostingEntry* last = (PostingEntry*)vectorGet(list, list->size - 1);
         if (last && last->doc_id == doc_id) {
             return;
         }
     }
-
+    
     PostingEntry entry;
     entry.doc_id = doc_id;
+    strncpy(entry.title, title, 255);
+    entry.title[255] = '\0';
 
-    if (title) {
-        strncpy(entry.title, title, MAX_TITLE_LEN - 1);
-        entry.title[MAX_TITLE_LEN - 1] = '\0';
-    } else {
-        entry.title[0] = '\0';
-    }
-
-    appendVectorItem(list, &entry);
+    vectorPushBack(list, &entry);
 }
 
 Vector* clonePostingList(const Vector* src) {
     if (!src) return NULL;
-
-    Vector* clone = createPostingList();
-
-    if (!clone) {
-        return NULL;
-    }
+    Vector* clone = vectorCreate(src->elem_size);
+    if (!clone) return NULL;
 
     for (size_t i = 0; i < src->size; i++) {
-        const PostingEntry* entry = getVectorItemConst(src, i);
-
+        const PostingEntry* entry = (const PostingEntry*)vectorGet(src, i);
         if (entry) {
-            appendVectorItem(clone, entry);
+            vectorPushBack(clone, entry);
         }
     }
-
+    
     return clone;
+}
+
+PostingEntry* getPostingEntry(const Vector* list, size_t index) {
+    if (!list) return NULL;
+    return (PostingEntry*)vectorGet(list, index);
+}
+
+size_t getPostingListSize(const Vector* list) {
+    return list ? list->size : 0;
 }

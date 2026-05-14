@@ -1,19 +1,20 @@
-#pragma once
+#ifndef VECTOR_H
+#define VECTOR_H
 
 #include <stddef.h>
 
-typedef struct {
+typedef struct Vector {
     void*  data;
+    size_t elem_size;
     size_t size;
     size_t capacity;
-    size_t elem_size;
 } Vector;
 
-Vector* createVector(size_t elem_size);
-void    vectorFree(Vector* vector);
+Vector* vectorCreate(size_t elem_size);
+void    vectorFree(Vector* vec);
+void    vectorPushBack(Vector* vec, const void* elem);
+void*   vectorGet(const Vector* vec, size_t index);
+size_t  vectorSize(const Vector* vec);
+void    vectorClear(Vector* vec);
 
-int     appendVectorItem(Vector* vector, const void* item);
-void*   getVectorItem(Vector* vector, size_t index);
-const void* getVectorItemConst(const Vector* vector, size_t index);
-
-int     vectorReserve(Vector* vector, size_t new_capacity);
+#endif

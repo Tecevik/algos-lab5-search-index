@@ -1,69 +1,58 @@
 #include "vector.h"
-
 #include <stdlib.h>
 #include <string.h>
 
-#define VECTOR_INITIAL_CAPACITY 8
+#define INITIAL_CAPACITY 4
 
-Vector* createVector(size_t elem_size) {
-    if (elem_size == 0) return NULL;
-
-    Vector* vector = malloc(sizeof(Vector));
-    if (!vector) return NULL;
-
-    vector->data = malloc(elem_size * VECTOR_INITIAL_CAPACITY);
-    if (!vector->data) {
-        free(vector);
+Vector* vectorCreate(size_t elem_size) {
+    Vector* vec = (Vector*)malloc(sizeof(Vector));
+    if (!vec) return NULL;
+    
+    vec->elem_size = elem_size;
+    vec->size = 0;
+    vec->capacity = INITIAL_CAPACITY;
+    vec->data = malloc(elem_size * INITIAL_CAPACITY);
+    
+    if (!vec->data) {
+        free(vec);
         return NULL;
     }
-
-    vector->size = 0;
-    vector->capacity = VECTOR_INITIAL_CAPACITY;
-    vector->elem_size = elem_size;
-
-    return vector;
+    
+    return vec;
 }
 
-void vectorFree(Vector* vector) {
-    if (!vector) return;
-
-    free(vector->data);
-    free(vector);
+void vectorFree(Vector* vec) {
+    if (!vec) return;
+    free(vec->data);
+    free(vec);
 }
 
-int vectorReserve(Vector* vector, size_t new_capacity) {
-    if (!vector) return 0;
-    if (new_capacity <= vector->capacity) return 1;
-
-    void* new_data = realloc(vector->data, new_capacity * vector->elem_size);
-    if (!new_data) return 0;
-
-    vector->data = new_data;
-    vector->capacity = new_capacity;
-    return 1;
-}
-
-int appendVectorItem(Vector* vector, const void* item) {
-    if (!vector || !item) return 0;
-
-    if (vector->size == vector->capacity) {
-        size_t new_capacity = vector->capacity * 2;
-        if (!vectorReserve(vector, new_capacity)) return 0;
+void vectorPushBack(Vector* vec, const void* elem) {
+    if (!vec || !elem) return;
+    
+    if (vec->size >= vec->capacity) {
+        size_t new_capacity = vec->capacity * 2;
+        void* new_data = realloc(vec->data, vec->elem_size * new_capacity);
+        if (!new_data) return;
+        
+        vec->data = new_data;
+        vec->capacity = new_capacity;
     }
-
-    char* dst = (char*)vector->data + vector->size * vector->elem_size;
-    memcpy(dst, item, vector->elem_size);
-    vector->size++;
-
-    return 1;
+    
+    memcpy((char*)vec->data + vec->size * vec->elem_size, elem, vec->elem_size);
+    vec->size++;
 }
 
-void* getVectorItem(Vector* vector, size_t index) {
-    if (!vector || index >= vector->size) return NULL;
-    return (char*)vector->data + index * vector->elem_size;
+void* vectorGet(const Vector* vec, size_t index) {
+    if (!vec || index >= vec->size) return NULL;
+    return (char*)vec->data + index * vec->elem_size;
 }
 
-const void* getVectorItemConst(const Vector* vector, size_t index) {
-    if (!vector || index >= vector->size) return NULL;
-    return (const char*)vector->data + index * vector->elem_size;
+size_t vectorSize(const Vector* vec) {
+    return vec ? vec->size : 0;
+}
+
+void vectorClear(Vector* vec) {
+    if (!vec) return;
+    vec->size = 0;
 }
