@@ -31,53 +31,268 @@
 #include "rbtree.h"
 
 #include <stdlib.h>
+#include <string.h>
+
+static RBNode* createNode(
+    RBTree* tree,
+    const char* key,
+    int doc_id,
+    const char* title
+) {
+    RBNode* node = (RBNode*)malloc(sizeof(RBNode));
+    if (!node) return NULL;
+
+    node->key = strdup(key);
+    if (!node->key) {
+        free(node);
+        return NULL;
+    }
+
+    node->postings = createPostingList();
+    if (!node->postings) {
+        free(node->key);
+        free(node);
+        return NULL;
+    }
+
+    appendPosting(node->postings, doc_id, title);
+
+    node->color = RB_RED;
+
+    node->left = tree->nil;
+    node->right = tree->nil;
+    node->parent = tree->nil;
+
+    return node;
+}
+
+static void leftRotate(RBTree* tree, RBNode* x) {
+    RBNode* y = x->right;
+
+    x->right = y->left;
+
+    if (y->left != tree->nil) {
+        y->left->parent = x;
+    }
+
+    y->parent = x->parent;
+
+    if (x->parent == tree->nil) {
+        tree->root = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
+
+    y->left = x;
+    x->parent = y;
+}
+
+static void rightRotate(RBTree* tree, RBNode* y) {
+    RBNode* x = y->left;
+
+    y->left = x->right;
+
+    if (x->right != tree->nil) {
+        x->right->parent = y;
+    }
+
+    x->parent = y->parent;
+
+    if (y->parent == tree->nil) {
+        tree->root = x;
+    } else if (y == y->parent->right) {
+        y->parent->right = x;
+    } else {
+        y->parent->left = x;
+    }
+
+    x->right = y;
+    y->parent = x;
+}
+
+static void insertFixup(RBTree* tree, RBNode* z) {
+    while (z->parent->color == RB_RED) {
+
+        if (z->parent == z->parent->parent->left) {
+
+            RBNode* y = z->parent->parent->right;
+
+            if (y->color == RB_RED) {
+
+                z->parent->color = RB_BLACK;
+                y->color = RB_BLACK;
+                z->parent->parent->color = RB_RED;
+
+                z = z->parent->parent;
+
+            } else {
+
+                if (z == z->parent->right) {
+                    z = z->parent;
+                    leftRotate(tree, z);
+                }
+
+                z->parent->color = RB_BLACK;
+                z->parent->parent->color = RB_RED;
+
+                rightRotate(tree, z->parent->parent);
+            }
+
+        } else {
+
+            RBNode* y = z->parent->parent->left;
+
+            if (y->color == RB_RED) {
+
+                z->parent->color = RB_BLACK;
+                y->color = RB_BLACK;
+                z->parent->parent->color = RB_RED;
+
+                z = z->parent->parent;
+
+            } else {
+
+                if (z == z->parent->left) {
+                    z = z->parent;
+                    rightRotate(tree, z);
+                }
+
+                z->parent->color = RB_BLACK;
+                z->parent->parent->color = RB_RED;
+
+                leftRotate(tree, z->parent->parent);
+            }
+        }
+    }
+
+    tree->root->color = RB_BLACK;
+}
 
 RBTree* createRBTree(void) {
-    RBTree* tree = malloc(sizeof(RBTree));
+    RBTree* tree = (RBTree*)malloc(sizeof(RBTree));
     if (!tree) return NULL;
 
-    tree->nil = NULL;
-    tree->root = NULL;
+    tree->nil = (RBNode*)malloc(sizeof(RBNode));
+    if (!tree->nil) {
+        free(tree);
+        return NULL;
+    }
+
+    tree->nil->color = RB_BLACK;
+    tree->nil->left = tree->nil;
+    tree->nil->right = tree->nil;
+    tree->nil->parent = tree->nil;
+
+    tree->nil->key = NULL;
+    tree->nil->postings = NULL;
+
+    tree->root = tree->nil;
     tree->size = 0;
 
     return tree;
 }
 
+static void freeNodeRecursive(RBTree* tree, RBNode* node) {
+    if (node == tree->nil) return;
+
+    freeNodeRecursive(tree, node->left);
+    freeNodeRecursive(tree, node->right);
+
+    free(node->key);
+    vectorFree(node->postings);
+
+    free(node);
+}
+
 void freeRBTree(RBTree* tree) {
-    /*
-     * TODO: free all nodes and sentinel.
-     */
+    if (!tree) return;
+
+    freeNodeRecursive(tree, tree->root);
+
+    free(tree->nil);
     free(tree);
 }
 
 void rbInsert(RBTree* tree, const char* key, int doc_id, const char* title) {
-    /*
-     * TODO(Ваня):
-     * Реализовать вставку в Red-Black Tree.
-     *
-     * Требования:
-     * - root всегда должен быть чёрным;
-     * - nil/sentinel должен использоваться как чёрный лист;
-     * - не должно быть двух красных узлов подряд;
-     * - black-height должен сохраняться.
-     *
-     * Если key уже есть:
-     * - не создаём новый узел;
-     * - добавляем doc_id/title в postings существующего узла.
-     */
-    (void)tree;
-    (void)key;
-    (void)doc_id;
-    (void)title;
+    if (!tree || !key || !title) return;
+
+    RBNode* y = tree->nil;
+    RBNode* x = tree->root;
+
+    while (x != tree->nil) {
+
+        y = x;
+
+        int cmp = strcmp(key, x->key);
+
+        if (cmp == 0) {
+            appendPosting(x->postings, doc_id, title);
+            return;
+        }
+
+        if (cmp < 0) {
+            x = x->left;
+        } else {
+            x = x->right;
+        }
+    }
+
+    RBNode* z = createNode(tree, key, doc_id, title);
+    if (!z) return;
+
+    z->parent = y;
+
+    if (y == tree->nil) {
+        tree->root = z;
+    } else if (strcmp(z->key, y->key) < 0) {
+        y->left = z;
+    } else {
+        y->right = z;
+    }
+
+    insertFixup(tree, z);
+
+    tree->size++;
 }
 
 Vector* rbSearch(const RBTree* tree, const char* key) {
-    /*
-     * TODO: implement Red-Black search.
-     */
-    (void)tree;
-    (void)key;
+    if (!tree || !key) return NULL;
+
+    RBNode* current = tree->root;
+
+    while (current != tree->nil) {
+
+        int cmp = strcmp(key, current->key);
+
+        if (cmp == 0) {
+            return current->postings;
+        }
+
+        if (cmp < 0) {
+            current = current->left;
+        } else {
+            current = current->right;
+        }
+    }
+
     return NULL;
+}
+
+static void traverseRecursive(
+    const RBTree* tree,
+    RBNode* node,
+    void (*visit)(const char* key, Vector* postings, void* ctx),
+    void* ctx
+) {
+    if (node == tree->nil) return;
+
+    traverseRecursive(tree, node->left, visit, ctx);
+
+    visit(node->key, node->postings, ctx);
+
+    traverseRecursive(tree, node->right, visit, ctx);
 }
 
 void rbTraverse(
@@ -85,10 +300,7 @@ void rbTraverse(
     void (*visit)(const char* key, Vector* postings, void* ctx),
     void* ctx
 ) {
-    /*
-     * TODO: implement in-order traversal.
-     */
-    (void)tree;
-    (void)visit;
-    (void)ctx;
+    if (!tree || !visit) return;
+
+    traverseRecursive(tree, tree->root, visit, ctx);
 }
