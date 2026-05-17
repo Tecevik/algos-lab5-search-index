@@ -28,6 +28,7 @@
  * В режиме --json нельзя печатать ничего, кроме валидного JSON.
  */
 #include "search.h"
+#include "../common/vector.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -77,7 +78,7 @@ static int tokenizeQuery(const char* query, char tokens[MAX_QUERY_TOKENS][MAX_TO
 }
 
 static int postingDocIdAt(const Vector* list, size_t i) {
-    const PostingEntry* entry = getVectorItemConst(list, i);
+    const PostingEntry* entry = vectorGet(list, i);
     return entry ? entry->doc_id : -1;
 }
 
@@ -101,7 +102,7 @@ Vector* intersectPostings(Vector** lists, int n) {
     Vector* base = lists[0];
 
     for (size_t i = 0; i < base->size; i++) {
-        PostingEntry* base_entry = getVectorItem(base, i);
+        PostingEntry* base_entry = vectorGet(base, i);
         if (!base_entry) continue;
 
         int found_in_all = 1;
@@ -136,7 +137,7 @@ SearchResults* search(Index* idx, const char* query) {
     SearchResults* sr = malloc(sizeof(SearchResults));
     if (!sr) return NULL;
 
-    sr->results = createVector(sizeof(SearchResult));
+    sr->results = vectorCreate(sizeof(SearchResult));
     sr->total = 0;
     sr->time_ms = 0.0;
 
@@ -175,7 +176,7 @@ SearchResults* search(Index* idx, const char* query) {
     size_t limit = intersection->size < TOP_K ? intersection->size : TOP_K;
 
     for (size_t i = 0; i < limit; i++) {
-        PostingEntry* entry = getVectorItem(intersection, i);
+        PostingEntry* entry = vectorGet(intersection, i);
         if (!entry) continue;
 
         SearchResult result;
@@ -185,7 +186,7 @@ SearchResults* search(Index* idx, const char* query) {
         strncpy(result.title, entry->title, MAX_TITLE_LEN - 1);
         result.title[MAX_TITLE_LEN - 1] = '\0';
 
-        appendVectorItem(sr->results, &result);
+        vectorPushBack(sr->results, &result);
     }
 
     vectorFree(intersection);
@@ -200,7 +201,7 @@ void printResultsText(const SearchResults* sr) {
     printf("Time: %.3f ms | Found: %d documents\n\n", sr->time_ms, sr->total);
 
     for (size_t i = 0; i < sr->results->size; i++) {
-        const SearchResult* r = getVectorItemConst(sr->results, i);
+        const SearchResult* r = vectorGet(sr->results, i);
         if (!r) continue;
 
         printf("%zu. [id=%d] %s | score=%d\n", i + 1, r->doc_id, r->title, r->score);
@@ -255,7 +256,7 @@ void printResultsJSON(const SearchResults* sr) {
     printf("\"results\":[");
 
     for (size_t i = 0; i < sr->results->size; i++) {
-        const SearchResult* r = getVectorItemConst(sr->results, i);
+        const SearchResult* r = vectorGet(sr->results, i);
         if (!r) continue;
 
         if (i > 0) {
