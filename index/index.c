@@ -203,25 +203,22 @@ void traverseIndex(
     }
 }
 
+// Callback для обхода дерева при сохранении индекса
+static void savePostingCallback(const char* key, Vector* postings, void* ctx) {
+    FILE* f = (FILE*)ctx;
+    fprintf(f, "%s\t", key);
+    
+    for (size_t i = 0; i < postings->size; i++) {
+        PostingEntry* entry = vectorGet(postings, i);
+        if (!entry) continue;
+        
+        if (i > 0) fputc('|', f);
+        fprintf(f, "%d:%s", entry->doc_id, entry->title);
+    }
+    fputc('\n', f);
+}
+
 void saveIndex(const Index* idx, const char* path) {
-    /*
-     * TODO(Егор):
-     * Реализовать сохранение индекса в файл.
-     *
-     * Предлагаемый формат:
-     *
-     * term<TAB>doc_id:title|doc_id:title|doc_id:title
-     *
-     * Пример:
-     *
-     * python    1:How to sort a list|5:Python tips
-     *
-     * Для сохранения нужно использовать traverseIndex().
-     * Он обойдёт дерево и для каждого term вызовет callback.
-     *
-     * Важно:
-     * Формат должен быть одинаковым для AVL, RB и B-tree.
-     */
     if (!idx || !path) return;
 
     FILE* f = fopen(path, "w");
@@ -231,53 +228,71 @@ void saveIndex(const Index* idx, const char* path) {
     }
 
     fprintf(f, "# index type: %s\n", typeName(idx->type));
-    fprintf(f, "# TODO: implement real serialization\n");
+    
+    // обход дерева, запись в файл
+    traverseIndex(idx, savePostingCallback, f);
 
     fclose(f);
 }
 
 Index* loadIndex(const char* path, TreeType type) {
-    /*
-     * TODO(Егор):
-     * Реализовать загрузку индекса из файла.
-     *
-     * Логика:
-     * - создать пустой Index нужного типа;
-     * - открыть файл;
-     * - прочитать term и posting list;
-     * - для каждой posting-записи вызвать insertTerm();
-     *
-     * Важно:
-     * Загруженный индекс должен работать одинаково для всех трёх деревьев.
-     */
-    (void)path;
-    return createIndex(type);
+    Index* idx = createIndex(type);
+    if (!idx) return NULL;
+
+    FILE* f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Failed to open index for reading: %s\n", path);
+        return idx;
+    }
+
+    // большой буфер в куче на 16Мб, потому что список может быть большим
+    size_t buf_size = 16 * 1024 * 1024; 
+    char* line = malloc(buf_size);
+    if (!line) {
+        fprintf(stderr, "Memory allocation failed during loadIndex\n");
+        fclose(f);
+        return idx;
+    }
+
+    while (fgets(line, buf_size, f)) {
+        if (line[0] == '#' || line[0] == '\n') continue;
+
+        // удаление переноса строки
+        line[strcspn(line, "\r\n")] = '\0';
+
+        char* tab = strchr(line, '\t');
+        if (!tab) continue;
+
+        *tab = '\0'; // разделяем term и postings
+        char* term = line;
+        char* postings = tab + 1;
+
+        // парсинг списка доков
+        char* token = strtok(postings, "|");
+        while (token) {
+            char* colon = strchr(token, ':');
+            if (colon) {
+                *colon = '\0';
+                int doc_id = atoi(token);
+                const char* title = colon + 1;
+                insertTerm(idx, term, doc_id, title);
+            }
+            token = strtok(NULL, "|");
+        }
+    }
+
+    free(line);
+    fclose(f);
+    return idx;
 }
 
 void runIndex(TreeType type, const char* data_path, const char* idx_path) {
-    /*
-     * TODO(Егор):
-     * Реализовать полный pipeline индексации.
-     *
-     * Логика:
-     * 1. Создать Index нужного типа.
-     * 2. Открыть docs.jsonl.
-     * 3. Для каждой строки получить:
-     *    - doc_id
-     *    - title
-     *    - tokens
-     * 4. Вызвать indexDocument().
-     * 5. Сохранить индекс через saveIndex().
-     * 6. Освободить память.
-     *
-     * Примечание:
-     * JSON можно парсить упрощённо, потому что формат docs.jsonl
-     * генерирует наш preprocess.py.
-     */
+    if (!data_path || !idx_path) return;
+
     printf("Indexing started\n");
     printf("type=%s\n", typeName(type));
-    printf("data=%s\n", data_path ? data_path : "(null)");
-    printf("index=%s\n", idx_path ? idx_path : "(null)");
+    printf("data=%s\n", data_path);
+    printf("index=%s\n", idx_path);
 
     Index* idx = createIndex(type);
     if (!idx) {
@@ -285,7 +300,94 @@ void runIndex(TreeType type, const char* data_path, const char* idx_path) {
         return;
     }
 
+    FILE* f = fopen(data_path, "r");
+    if (!f) {
+        fprintf(stderr, "Failed to open data file: %s\n", data_path);
+        freeIndex(idx);
+        return;
+    }
+
+    // буфер для чтения одной строки JSONL
+    size_t buf_size = 2 * 1024 * 1024;
+    char* line = malloc(buf_size);
+    if (!line) {
+        fprintf(stderr, "Memory allocation failed during runIndex\n");
+        fclose(f);
+        freeIndex(idx);
+        return;
+    }
+
+    int docs_processed = 0;
+
+    // быстрый парсинг JSONL, чтобы не использовать тяжёлые библиотеки
+    while (fgets(line, buf_size, f)) {
+        // парсинг doc_id
+        char* p = strstr(line, "\"doc_id\"");
+        if (!p) continue;
+        p = strpbrk(p + 8, "0123456789");
+        if (!p) continue;
+        int doc_id = atoi(p);
+
+        // парсинг title
+        char title[256] = {0};
+        p = strstr(line, "\"title\"");
+        if (p) {
+            p = strchr(p + 7, '"');
+            if (p) {
+                p++; // пропуск ковычки
+                char* end = strstr(p, "\", \"tokens\""); // поиск конца title
+                if (!end) end = strchr(p, '"'); // если структура другая, фолбек
+                if (end) {
+                    size_t len = end - p;
+                    if (len >= sizeof(title)) len = sizeof(title) - 1;
+                    strncpy(title, p, len);
+                    title[len] = '\0';
+                }
+            }
+        }
+
+        // парсинг tokens
+        const char* tokens[2048]; // максимум токенов на документ
+        int n_tokens = 0;
+        
+        p = strstr(line, "\"tokens\"");
+        if (p) {
+            p = strchr(p, '[');
+            if (p) {
+                p++;
+                while (*p && *p != ']') {
+                    if (*p == '"') {
+                        p++; // начало токена
+                        char* end = strchr(p, '"');
+                        if (end) {
+                            *end = '\0'; // заменяем ковычку на конец строки
+                            if (n_tokens < 2048) {
+                                tokens[n_tokens++] = p;
+                            }
+                            p = end + 1;
+                        }
+                    } else {
+                        p++;
+                    }
+                }
+            }
+        }
+
+        indexDocument(idx, doc_id, title, tokens, n_tokens);
+        docs_processed++;
+        
+        if (docs_processed % 10000 == 0) {
+            printf("Indexed %d documents...\n", docs_processed);
+        }
+    }
+
+    printf("Total documents indexed: %d\n", docs_processed);
+    
+    printf("Saving index to %s...\n", idx_path);
     saveIndex(idx, idx_path);
+    
+    free(line);
+    fclose(f);
     freeIndex(idx);
 
     printf("Indexing finished\n");
