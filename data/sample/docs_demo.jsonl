@@ -1,0 +1,40 @@
+{"doc_id":1,"title":"How to sort a list in Python","tokens":["python","list","sort","array","algorithm"]}
+{"doc_id":2,"title":"Python dictionary key error","tokens":["python","dictionary","key","error","hashmap"]}
+{"doc_id":3,"title":"Memory leak in C program","tokens":["memory","leak","program","c","pointer"]}
+{"doc_id":4,"title":"Balanced binary tree rotations","tokens":["balanced","binary","tree","rotation","height"]}
+{"doc_id":5,"title":"Red black tree insertion fixup","tokens":["red","black","tree","insertion","fixup","color"]}
+{"doc_id":6,"title":"B-tree node split example","tokens":["btree","tree","node","split","keys","children"]}
+{"doc_id":7,"title":"Database index basics","tokens":["database","index","search","storage","query"]}
+{"doc_id":8,"title":"Inverted index for text search","tokens":["inverted","index","text","search","document"]}
+{"doc_id":9,"title":"Fuzzy search with Levenshtein distance","tokens":["fuzzy","search","levenshtein","distance","typo"]}
+{"doc_id":10,"title":"Exact search with token intersection","tokens":["exact","search","token","intersection","query"]}
+{"doc_id":11,"title":"Cache invalidation problem","tokens":["cache","invalidation","system","performance"]}
+{"doc_id":12,"title":"Catch exception in Python","tokens":["catch","exception","python","error"]}
+{"doc_id":13,"title":"Batch processing large files","tokens":["batch","processing","large","files","performance"]}
+{"doc_id":14,"title":"Graph traversal using BFS","tokens":["graph","traversal","bfs","queue","algorithm"]}
+{"doc_id":15,"title":"Graph traversal using DFS","tokens":["graph","traversal","dfs","stack","algorithm"]}
+{"doc_id":16,"title":"Hash table collision handling","tokens":["hash","table","collision","chaining","probing"]}
+{"doc_id":17,"title":"String matching algorithm overview","tokens":["string","matching","algorithm","text","pattern"]}
+{"doc_id":18,"title":"Algorithm complexity and Big O notation","tokens":["algorithm","complexity","big","notation","asymptotic"]}
+{"doc_id":19,"title":"Amortized analysis of dynamic arrays","tokens":["amortized","analysis","dynamic","array","resize"]}
+{"doc_id":20,"title":"Priority queue with binary heap","tokens":["priority","queue","binary","heap","insert"]}
+{"doc_id":21,"title":"AVL tree left rotation","tokens":["avl","tree","left","rotation","balance"]}
+{"doc_id":22,"title":"AVL tree right rotation","tokens":["avl","tree","right","rotation","balance"]}
+{"doc_id":23,"title":"Red black tree recoloring case","tokens":["red","black","tree","recoloring","case"]}
+{"doc_id":24,"title":"B-tree search inside node","tokens":["btree","search","node","keys","children"]}
+{"doc_id":25,"title":"Document ranking by score","tokens":["document","ranking","score","search","result"]}
+{"doc_id":26,"title":"Noisy user input in search systems","tokens":["noisy","input","search","typo","user"]}
+{"doc_id":27,"title":"Spell correction for query terms","tokens":["spell","correction","query","terms","distance"]}
+{"doc_id":28,"title":"Frontend demo with Streamlit","tokens":["frontend","demo","streamlit","interface","search"]}
+{"doc_id":29,"title":"Command line interface for search engine","tokens":["command","line","interface","cli","search"]}
+{"doc_id":30,"title":"Search engine architecture overview","tokens":["search","engine","architecture","index","frontend"]}
+{"doc_id":31,"title":"Python list comprehension examples","tokens":["python","list","comprehension","examples"]}
+{"doc_id":32,"title":"Python sorting custom key","tokens":["python","sorting","custom","key","list"]}
+{"doc_id":33,"title":"Database query optimization","tokens":["database","query","optimization","index","performance"]}
+{"doc_id":34,"title":"Text tokenization pipeline","tokens":["text","tokenization","pipeline","tokens","document"]}
+{"doc_id":35,"title":"Large dataset benchmark setup","tokens":["large","dataset","benchmark","performance","time"]}
+{"doc_id":36,"title":"Search result with equal fuzzy distance","tokens":["search","result","equal","fuzzy","distance"]}
+{"doc_id":37,"title":"Tree traversal in sorted order","tokens":["tree","traversal","sorted","order","keys"]}
+{"doc_id":38,"title":"Pointer bug in C tree implementation","tokens":["pointer","bug","c","tree","implementation"]}
+{"doc_id":39,"title":"JSON output for frontend parser","tokens":["json","output","frontend","parser","result"]}
+{"doc_id":40,"title":"Index serialization and loading","tokens":["index","serialization","loading","storage","file"]}
